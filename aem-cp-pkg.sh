@@ -9,32 +9,31 @@
 [[ "$#" -eq 0 ]] && echo "USAGE: $(basename "$0") /content/we-retail/us/en" && exit 1
 
 
-# SOURCE AEM: 
-# TODO: replace with desired source HOST and credentials (or parametrize)
-HOST=http://demo.netcentric.biz:4502
-USER=admin
-PASS=secret42
+# SOURCE AEM (override via env vars)
+AEM_HOST="${AEM_HOST:-http://demo.netcentric.biz:4502}"
+AEM_USER="${AEM_USER:-admin}"
+AEM_PASS="${AEM_PASS:-secret42}"
 
 # TARGET AEM
-HOST2=http://localhost:4502
-USER2=admin
-PASS2=admin
+AEM_HOST2="${AEM_HOST2:-http://localhost:4502}"
+AEM_USER2="${AEM_USER2:-admin}"
+AEM_PASS2="${AEM_PASS2:-admin}"
 
-GRP_NAME=ncpkg
-PKG_NAME=ncdump
+GRP_NAME="${GRP_NAME:-ncpkg}"
+PKG_NAME="${PKG_NAME:-ncdump}"
 
 # STEP 0: DELETE package if exists
-curl -v -u "$USER:$PASS" -F cmd=delete $HOST/crx/packmgr/service/.json/etc/packages/${GRP_NAME}/${PKG_NAME}.zip || true
+curl -v -u "$AEM_USER:$AEM_PASS" -F cmd=delete $AEM_HOST/crx/packmgr/service/.json/etc/packages/${GRP_NAME}/${PKG_NAME}.zip || true
 
 # STEP 1: Create package
-curl -v -u "$USER:$PASS" \
-	"$HOST/crx/packmgr/service/.json/etc/packages/${GRP_NAME}/${PKG_NAME}.zip?cmd=create" \
+curl -v -u "$AEM_USER:$AEM_PASS" \
+	"$AEM_HOST/crx/packmgr/service/.json/etc/packages/${GRP_NAME}/${PKG_NAME}.zip?cmd=create" \
 	-d groupName=${GRP_NAME} \
 	-d packageName=${PKG_NAME}
 
 # STEP 2: UPDATE
-curl -v -u "$USER:$PASS" \
-	"$HOST/crx/packmgr/update.jsp" \
+curl -v -u "$AEM_USER:$AEM_PASS" \
+	"$AEM_HOST/crx/packmgr/update.jsp" \
 	-F path=/etc/packages/${GRP_NAME}/${PKG_NAME}.zip \
 	-F groupName=${GRP_NAME} \
 	-F packageName=${PKG_NAME} \
@@ -60,29 +59,28 @@ curl -v -u "$USER:$PASS" \
 
 
 # STEP 3: BUILD
-curl -v -u "$USER:$PASS" \
-	-X POST "$HOST/crx/packmgr/service/.json/etc/packages/${GRP_NAME}/${PKG_NAME}.zip?cmd=build"
+curl -v -u "$AEM_USER:$AEM_PASS" \
+	-X POST "$AEM_HOST/crx/packmgr/service/.json/etc/packages/${GRP_NAME}/${PKG_NAME}.zip?cmd=build"
 
 # STEP 4: DOWNLOAD
-curl -v -u "$USER:$PASS" \
-	"$HOST/etc/packages/${GRP_NAME}/${PKG_NAME}.zip" \
+curl -v -u "$AEM_USER:$AEM_PASS" \
+	"$AEM_HOST/etc/packages/${GRP_NAME}/${PKG_NAME}.zip" \
 	--output "${GRP_NAME}-${PKG_NAME}.zip"
 
 
 # =========== TARGET AEM INSTANCE ================
 
 # STEP B1: upload package (optional, can be skipped)
-# curl -v -u "$USER2:$PASS2" -F cmd=upload -F force=true -F package=@"${GRP_NAME}-${PKG_NAME}.zip" "$HOST2/crx/packmgr/service/.json"
+# curl -v -u "$AEM_USER2:$AEM_PASS2" -F cmd=upload -F force=true -F package=@"${GRP_NAME}-${PKG_NAME}.zip" "$AEM_HOST2/crx/packmgr/service/.json"
 
 # STEP B2: install package
-curl -v -u "$USER2:$PASS2" \
+curl -v -u "$AEM_USER2:$AEM_PASS2" \
 	-F file=@"${GRP_NAME}-${PKG_NAME}.zip" \
 	-F name="${GRP_NAME}-${PKG_NAME}.zip" \
 	-F force=true \
 	-F install=true \
-	"$HOST2/crx/packmgr/service.jsp"
+	"$AEM_HOST2/crx/packmgr/service.jsp"
 
 read -n1 -p "open in Finder? (y/n) " yn && [[ $yn == y ]] && open -R "${GRP_NAME}-${PKG_NAME}.zip"
 echo
-read -n1 -p "open in CRXDELite? (y/n) " yn && [[ $yn == y ]] && open "${HOST2}/crx/de/index.jsp#$1"
-
+read -n1 -p "open in CRXDELite? (y/n) " yn && [[ $yn == y ]] && open "${AEM_HOST2}/crx/de/index.jsp#$1"

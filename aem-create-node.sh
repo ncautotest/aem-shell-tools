@@ -8,8 +8,8 @@
 # export PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 
-USER=admin
-PASS=admin
+AEM_USER="${AEM_USER:-admin}"
+AEM_PASS="${AEM_PASS:-admin}"
 AEM_CSRF_TOKEN_TOKEN=/libs/granite/csrf/token.json
 
 if [ "$#" -lt 2 ]; then
@@ -23,7 +23,7 @@ host=`echo $1 | cut -d/ -f1-3`
 
 echo HOST=$host
 
-token="$(curl -H User-Agent:Adobe-Campaign -u ${USER}:${PASS} ${host}${AEM_CSRF_TOKEN_TOKEN}  | sed -e 's/[{"token":}]/''/g')"
+token="$(curl -H User-Agent:Adobe-Campaign -u ${AEM_USER}:${AEM_PASS} ${host}${AEM_CSRF_TOKEN_TOKEN}  | sed -e 's/[{"token":}]/''/g')"
 
 echo TOKEN=${token}
 url=${1}
@@ -33,6 +33,6 @@ props="$@"
 echo props=${props}
 curl  ${url} -vv -H User-Agent:Adobe-Campaign \
   -H Referer:${host} \
-  -u ${USER}:${PASS} \
+  -u ${AEM_USER}:${AEM_PASS} \
   -H CSRF-Token:${token} \
   ${props}
